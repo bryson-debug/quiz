@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- PLACEHOLDER favicon -->
+  <circle cx="32" cy="32" r="32" fill="#CDEAE7"/>
+  <path fill="#1C2120" d="M18 10h7v20a7 7 0 0 0 14 0V10h7v20a14 14 0 0 1-10.5 13.6V56h-7V43.6A14 14 0 0 1 18 30z"/>
+</svg>

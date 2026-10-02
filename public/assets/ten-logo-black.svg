@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 68" width="240" height="68" role="img" aria-label="Tarbet Education Network (placeholder logo)">
+  <!-- PLACEHOLDER: replace with the real black TEN tuning-fork wordmark (keep the filename). -->
+  <g fill="#1C2120">
+    <path d="M10 6h8v30a8 8 0 0 0 16 0V6h8v30a16 16 0 0 1-12 15.5V64h-8V51.5A16 16 0 0 1 10 36z"/>
+    <text x="56" y="49" font-family="Arial Black, Archivo Black, Arial, sans-serif" font-weight="900" font-size="46" letter-spacing="2">TEN</text>
+  </g>
+</svg>
