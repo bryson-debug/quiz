@@ -218,6 +218,29 @@ body[data-screen="intro"] .site-header { padding-bottom: 0; }
 .intro .btn { align-self: flex-start; min-width: min(100%, 280px); font-size: 1.05rem; }
 @media (max-width: 479px) { .intro .btn { width: 100%; } }
 
+/* --- About / instructions ----------------------------------------------- */
+.screen--about { padding-top: clamp(4px, 2vw, 16px); }
+.about__copy p { font-size: clamp(1.05rem, 1rem + 0.3vw, 1.175rem); line-height: 1.6; }
+.about__copy p:first-child { font-weight: 600; }
+.about__grid { display: grid; gap: 16px; margin: 28px 0 8px; }
+@media (min-width: 768px) { .about__grid { grid-template-columns: 1fr 1fr; } }
+.about__panel { background: var(--mint); border-radius: var(--radius); padding: clamp(20px, 3.5vw, 28px); }
+.about__panel--outline { background: var(--white); border: 2px solid var(--ink); }
+.about__panel h2 { font-size: 1rem; margin-bottom: 14px; }
+.about__pillars, .about__steps { margin: 0; padding: 0; list-style: none; counter-reset: n; display: grid; gap: 12px; }
+.about__pillars li, .about__steps li { counter-increment: n; position: relative; padding-left: 40px; line-height: 1.45; }
+.about__pillars li { font-weight: 600; padding-top: 3px; }
+.about__pillars li::before, .about__steps li::before {
+  content: counter(n);
+  position: absolute; left: 0; top: 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--ink); color: var(--white);
+  display: grid; place-items: center;
+  font: 700 0.85rem var(--font-body);
+}
+.about__steps li::before { background: var(--mint); color: var(--ink); }
+@media (min-width: 768px) { .screen--about .quiz-nav [data-action="begin"] { margin-left: auto; } }
+
 /* --- Progress ------------------------------------------------------------ */
 .progress { margin: 4px 0 clamp(20px, 4vw, 32px); }
 .progress__label { font-weight: 700; font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 8px; }
@@ -252,11 +275,12 @@ body[data-screen="intro"] .site-header { padding-bottom: 0; }
   margin-top: -1px;
 }
 
+/* Rating row spans the question text: starts after the number badge (28px + 10px gap), ends at the text's right edge. */
 .rating {
   display: grid;
   grid-template-columns: repeat(5, minmax(44px, 1fr));
   gap: 8px;
-  max-width: 420px;
+  margin-left: 38px;
 }
 .rating input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; pointer-events: none; }
 .rating label {
@@ -282,8 +306,7 @@ body[data-screen="intro"] .site-header { padding-bottom: 0; }
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  max-width: 420px;
-  margin-top: 8px;
+  margin: 8px 0 0 38px;
   font-size: 0.8rem;
   line-height: 1.25;
   color: var(--grey);
@@ -487,7 +510,6 @@ body.has-cookie-bar .quiz-nav { padding-bottom: 12px; }
 }
 .site-footer__inner { max-width: 1040px; margin: 0 auto; text-align: center; }
 .site-footer p { margin: 0 0 0.35em; }
-.site-footer .footer-legal { margin-top: 0.9em; }
 .site-footer nav { margin-top: 0.9em; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 0; }
 .site-footer nav a { color: var(--grey); padding: 6px 4px; }
 .site-footer nav span[aria-hidden] { padding: 6px 4px; }

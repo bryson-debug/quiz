@@ -19,7 +19,9 @@ statements (5 pillars × 5), see a radar chart, and learn their **Growth Pillar*
 
 ## Flow
 
-Intro → 5 pillar screens (one per pillar, framework order) → email gate (Flodesk) → results.
+Intro → About page ("Before you begin": framework, five pillars, how it works; copy in `copy.about`)
+→ 5 pillar screens (one per pillar, framework order) → email gate (Flodesk) → results.
+Rating buttons span the width of the statement text (indented past the number badge).
 Next is disabled until all 5 statements on a screen are answered; Back keeps answers. No totals
 are shown during the quiz. Answers are mirrored to `sessionStorage` (`ten-scorecard-v1`) so a refresh
 keeps progress; Retake clears it (including the gate unlock, so the gate shows again).
@@ -100,6 +102,8 @@ Clarity: standard snippet. Trackers load on page load. The cookie bar is a notic
 - EDGE CTA: `https://www.thatmusicteacher.com/EDGE?utm_source=pillar-quiz&utm_medium=quiz&utm_campaign=scorecard&utm_content={growth-slug}`
 - Privacy /privacy, Terms /tou, Disclaimer /disclaimer on thatmusicteacher.com; Contact mailto:hello@thatmusicteacher.com.
 - Footer links always open in a new tab (so progress is never lost).
+- Footer shows only the copyright, trademark line and legal links (the "answers stay on your device" /
+  "self-reflection tool" notes were removed at the owner's request). The PDF-name field has no hint text.
 - Header logo is not a link during the quiz; on results it links to https://tarbeteducationnetwork.com.
 
 ## Brand

@@ -41,7 +41,7 @@ function loadState() {
         }
       }
     }
-    const screen = ['intro', 'question', 'gate', 'results'].includes(saved.screen) ? saved.screen : 'intro';
+    const screen = ['intro', 'about', 'question', 'gate', 'results'].includes(saved.screen) ? saved.screen : 'intro';
     const step = Math.min(Math.max(Number(saved.step) || 0, 0), ORDER.length - 1);
     state = { screen, step, answers, unlocked: Boolean(saved.unlocked) };
     // Never land on gate/results with incomplete answers.
@@ -104,9 +104,7 @@ function renderFooter() {
   const link = (href, text) => `<a href="${esc(href)}"${href.startsWith('mailto:') ? '' : ' target="_blank" rel="noopener"'}>${esc(text)}</a>`;
   document.getElementById('site-footer').innerHTML = `
     <div class="site-footer__inner">
-      <p>${esc(f.privacyNote)}</p>
-      <p>${esc(f.disclaimerNote)}</p>
-      <p class="footer-legal">${esc(f.copyright.replace('{year}', year))}</p>
+      <p>${esc(f.copyright.replace('{year}', year))}</p>
       <p>${esc(f.trademark)}</p>
       <nav aria-label="Legal">
         ${link(L.privacy, 'Privacy Policy')}<span aria-hidden="true">|</span>
@@ -160,6 +158,33 @@ function introHtml() {
       <h1 id="screen-heading" class="intro__title" tabindex="-1">${esc(c.heading)}</h1>
       <div class="intro__panel"><p>${esc(c.body)}</p></div>
       <button type="button" class="btn" data-action="start">${esc(c.button)}</button>
+    </section>`;
+}
+
+function aboutHtml() {
+  const c = CONFIG.copy.about;
+  const paras = c.paragraphs.map((t) => `<p>${esc(t)}</p>`).join('');
+  const pillars = PILLARS.map((p) => `<li>${esc(p.name)}</li>`).join('');
+  const steps = c.steps.map((t) => `<li>${esc(t)}</li>`).join('');
+  return `
+    <section class="screen screen--about" aria-labelledby="screen-heading">
+      <p class="eyebrow">${esc(c.eyebrow)}</p>
+      <h1 id="screen-heading" class="pillar-title" tabindex="-1">${esc(c.heading)}</h1>
+      <div class="about__copy">${paras}</div>
+      <div class="about__grid">
+        <div class="about__panel">
+          <h2>${esc(c.pillarsHeading)}</h2>
+          <ol class="about__pillars">${pillars}</ol>
+        </div>
+        <div class="about__panel about__panel--outline">
+          <h2>${esc(c.howHeading)}</h2>
+          <ol class="about__steps">${steps}</ol>
+        </div>
+      </div>
+      <div class="quiz-nav">
+        <button type="button" class="btn btn--ghost" data-action="back">Back</button>
+        <button type="button" class="btn" data-action="begin">${esc(c.button)}</button>
+      </div>
     </section>`;
 }
 
@@ -297,8 +322,7 @@ function resultsHtml() {
         <h2 id="download-h">${esc(c.downloadHeading)}</h2>
         <div class="field">
           <label for="print-name">${esc(c.nameFieldLabel)}</label>
-          <input id="print-name" type="text" autocomplete="name" maxlength="80" aria-describedby="print-name-hint">
-          <small id="print-name-hint">${esc(c.nameFieldHint)}</small>
+          <input id="print-name" type="text" autocomplete="name" maxlength="80">
         </div>
         <button type="button" class="btn" data-action="download">${esc(c.downloadButton)}</button>
         <p class="download-status" data-download-status role="status"></p>
@@ -335,10 +359,12 @@ function render({ focus = true } = {}) {
   renderLogo();
 
   if (state.screen === 'intro') $main.innerHTML = introHtml();
+  else if (state.screen === 'about') $main.innerHTML = aboutHtml();
   else if (state.screen === 'question') $main.innerHTML = questionHtml(state.step);
   else if (state.screen === 'gate') $main.innerHTML = gateHtml();
   else $main.innerHTML = resultsHtml();
 
+  if (state.screen === 'about') bindAbout();
   if (state.screen === 'question') bindQuestion();
   if (state.screen === 'gate') bindGate();
   if (state.screen === 'results') bindResults();
@@ -351,11 +377,17 @@ function render({ focus = true } = {}) {
 
   const announcements = {
     intro: CONFIG.copy.intro.heading,
+    about: CONFIG.copy.about.heading,
     question: `Pillar ${state.step + 1} of ${PILLARS.length}: ${PILLARS[state.step].name}`,
     gate: CONFIG.copy.gate.heading,
     results: `Your results. Growth Pillar: ${BY_SLUG[results().growth].name}`,
   };
   if (focus) announce(announcements[state.screen]);
+}
+
+function bindAbout() {
+  $main.querySelector('[data-action="begin"]').addEventListener('click', () => go('question', 0));
+  $main.querySelector('[data-action="back"]').addEventListener('click', () => go('intro', 0));
 }
 
 function bindQuestion() {
@@ -394,7 +426,7 @@ function bindQuestion() {
   });
 
   form.querySelector('[data-action="back"]').addEventListener('click', () => {
-    if (state.step === 0) go('intro', 0);
+    if (state.step === 0) go('about', 0);
     else go('question', state.step - 1);
   });
 }
@@ -467,7 +499,7 @@ $main.addEventListener('click', (e) => {
   const start = e.target.closest('[data-action="start"]');
   if (!start) return;
   track.quizStarted();
-  go('question', 0);
+  go('about', 0);
 });
 
 // ---------------------------------------------------------------------------

@@ -66,6 +66,24 @@ export const CONFIG = {
       body: 'Discover your Growth Pillar: the one area of the Pillars of General Music Success that will make the biggest difference in your teaching right now.',
       button: 'Start My Scorecard',
     },
+    // Shown after the intro, before Pillar 1.
+    about: {
+      eyebrow: 'Before you begin',
+      heading: 'The Pillars of General Music Success',
+      paragraphs: [
+        'The Pillars of General Music Success are the five non-negotiable areas where every elementary music teacher needs to keep growing to avoid burnout and truly thrive in this work.',
+        "This framework isn't theory. It was built through deep work with music teachers around the world to pinpoint exactly where the time-wasting, frustration and overwhelm really come from.",
+        "Think of this scorecard as your personalized PD blueprint. In about five minutes, you'll see how confident you feel in each pillar right now, and you'll get a clear, strategic plan to level up your teaching, boost student engagement and get out the door on time.",
+      ],
+      pillarsHeading: 'The five pillars',
+      howHeading: 'How it works',
+      steps: [
+        'Rate 25 statements, five for each pillar, from 1 (Strongly Disagree) to 5 (Strongly Agree).',
+        "Go with your first instinct. There are no right or wrong answers, and nobody sees your responses but you.",
+        'Discover your Growth Pillar, your Foundation Pillar and your personalized next steps.',
+      ],
+      button: "Let's Begin",
+    },
     scale: { low: 'Strongly Disagree', high: 'Strongly Agree' },
     gate: {
       heading: 'Your results are ready.',
@@ -85,7 +103,6 @@ export const CONFIG = {
       supportButton: 'Join Elementary Music EDGE®',
       downloadHeading: 'Keep your scorecard',
       nameFieldLabel: 'Name to print on your scorecard',
-      nameFieldHint: 'Optional. Used only in your PDF, never saved or sent anywhere.',
       downloadButton: 'Download My Scorecard',
       retake: 'Retake the Scorecard',
     },
@@ -95,8 +112,6 @@ export const CONFIG = {
       button: 'Got it',
     },
     footer: {
-      privacyNote: 'Your quiz answers stay on your device and are never saved.',
-      disclaimerNote: 'This scorecard is a self-reflection tool, not a formal evaluation.',
       // {year} is replaced with the current year.
       copyright: '© {year} That Music Teacher, LLC d/b/a Tarbet Education Network. All rights reserved.',
       trademark: 'Elementary Music EDGE® is a registered trademark of That Music Teacher, LLC.',

@@ -79,6 +79,9 @@ for (const w of widths) {
   await shot(page, w, '1-intro');
 
   await page.click('[data-action="start"]');
+  await page.waitForSelector('.screen--about');
+  await shot(page, w, '1b-about');
+  await page.click('[data-action="begin"]');
   for (let step = 0; step < 5; step += 1) {
     const next = page.locator('[data-action="next"]');
     if (!(await next.isDisabled())) problems.push(`${w}px pillar ${step + 1}: Next enabled before answering`);
@@ -137,6 +140,7 @@ for (const [w, h] of [[844, 390], [1180, 820]]) {
   const page = await context.newPage();
   await page.goto(base).catch(() => {});
   await page.click('[data-action="start"]');
+  await page.click('[data-action="begin"]');
   await page.waitForSelector('.statement');
   await shot(page, `${w}x${h}`, 'landscape-question');
   await context.close();
