@@ -29,10 +29,10 @@ export const CONFIG = {
   flodesk: {
     forms: {
       'expectations-procedures': '6abffc0d14eff99404fef9c4',
-      'approaches-pedagogy': 'PLACEHOLDER_APPROACHES_PEDAGOGY',
-      'inclusion-differentiation': 'PLACEHOLDER_INCLUSION_DIFFERENTIATION',
-      'curriculum-planning': 'PLACEHOLDER_CURRICULUM_PLANNING',
-      'teacher-fulfillment': 'PLACEHOLDER_TEACHER_FULFILLMENT',
+      'approaches-pedagogy': '6ac3b7a4d3fb39ccdb8a7da1',
+      'inclusion-differentiation': '6ac3b801147b36f92f884771',
+      'curriculum-planning': '6ac3b81e147b36f92f884773',
+      'teacher-fulfillment': '6ac3b8379c6b79a7586772e7',
     },
     // Used while a pillar's form ID is still a placeholder.
     fallbackPillar: 'expectations-procedures',

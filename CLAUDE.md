@@ -64,13 +64,14 @@ Statement wording and pillar descriptions are approved copy. Don't edit them wit
 
 | Growth pillar | Form ID |
 |---|---|
-| Expectations & Procedures | `6abffc0d14eff99404fef9c4` (real) |
-| Approaches & Pedagogy | `PLACEHOLDER_APPROACHES_PEDAGOGY` |
-| Inclusion & Differentiation | `PLACEHOLDER_INCLUSION_DIFFERENTIATION` |
-| Curriculum & Planning | `PLACEHOLDER_CURRICULUM_PLANNING` |
-| Teacher Fulfillment | `PLACEHOLDER_TEACHER_FULFILLMENT` |
+| Expectations & Procedures | `6abffc0d14eff99404fef9c4` |
+| Approaches & Pedagogy | `6ac3b7a4d3fb39ccdb8a7da1` |
+| Inclusion & Differentiation | `6ac3b801147b36f92f884771` |
+| Curriculum & Planning | `6ac3b81e147b36f92f884773` |
+| Teacher Fulfillment | `6ac3b8379c6b79a7586772e7` |
 
-While an ID is a placeholder, the Expectations & Procedures form is used and a console warning is logged.
+All five IDs are real. If an ID is ever set back to a `PLACEHOLDER…` value, the Expectations & Procedures
+form is used instead and a console warning is logged.
 
 Submission detection (`gate.js`):
 1. MutationObserver on the container: `[data-ff-stage="success"]` reveals results immediately. Looser

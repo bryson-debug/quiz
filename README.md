@@ -55,7 +55,7 @@ Replace `public/assets/ten-logo-black.svg`, `og-image.png` (1200×630), `favicon
 
 ## Launch checklist
 
-- [ ] Replace the 4 placeholder Flodesk form IDs
+- [x] Replace the 4 placeholder Flodesk form IDs
 - [ ] Each Flodesk form adds subscribers to the correct pillar segment, with consent wording set in Flodesk's form settings
 - [ ] 5 Flodesk segments and 5 pillar workflows are built
 - [ ] Real TEN black logo, OG image and favicon added
