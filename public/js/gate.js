@@ -51,6 +51,14 @@ function hasSuccessState(container, afterSubmit) {
   return SUCCESS_SELECTORS.slice(1).some((sel) => queryAllDeep(container, sel).some(isVisible));
 }
 
+// The first-name value from the Flodesk form, used only to prefill the PDF name field (memory only).
+function readFirstName(container) {
+  const byName = queryAllDeep(container, 'input[name*="first" i], input[autocomplete="given-name"], input[autocomplete="name"]')[0];
+  const fallback = queryAllDeep(container, 'input[type="text"]').find((el) => !/mail/i.test(el.name || ''));
+  const input = byName || fallback;
+  return input ? String(input.value || '').trim() : '';
+}
+
 function hasRenderedForm(container) {
   return queryAllDeep(container, 'form, input[type="email"]').length > 0;
 }
@@ -59,7 +67,7 @@ function hasRenderedForm(container) {
  * Mount the gate form.
  * @param {HTMLElement} host element to render the form container into
  * @param {string} growthSlug
- * @param {{onSuccess: (how: string) => void, onBlocked: () => void, onRendered?: () => void}} handlers
+ * @param {{onSuccess: (how: string, info: {firstName: string}) => void, onBlocked: () => void, onRendered?: () => void}} handlers
  * @returns {() => void} cleanup
  */
 export function mountGateForm(host, growthSlug, { onSuccess, onBlocked, onRendered = () => {} }) {
@@ -75,13 +83,15 @@ export function mountGateForm(host, growthSlug, { onSuccess, onBlocked, onRender
   let rendered = false;
   let submitted = false;
   let submitTimer = null;
+  let firstName = '';
   const timers = [];
 
   const finish = (how) => {
     if (done) return;
     done = true;
     cleanup();
-    onSuccess(how);
+    if (!firstName) firstName = readFirstName(container);
+    onSuccess(how, { firstName });
   };
 
   const observer = new MutationObserver(() => {
@@ -97,6 +107,8 @@ export function mountGateForm(host, growthSlug, { onSuccess, onBlocked, onRender
     const form = event.target;
     if (form && typeof form.checkValidity === 'function' && !form.checkValidity()) return;
     submitted = true;
+    // Read now: Flodesk may clear the fields once it shows its success state.
+    firstName = readFirstName(container);
     clearTimeout(submitTimer);
     submitTimer = setTimeout(() => {
       if (done) return;

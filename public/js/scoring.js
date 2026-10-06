@@ -5,7 +5,7 @@
 // - Growth = lowest score; ties go to the pillar earliest in framework order.
 //   Any other pillar tied for lowest is "also worth your attention".
 // - Foundation = highest score excluding the growth pillar; same tie-break.
-// - All equal: growth = first pillar, foundation = second pillar.
+// - All equal: growth = first pillar, foundation = second pillar, nothing "also worth attention".
 
 export const STATEMENTS_PER_PILLAR = 5;
 
@@ -30,7 +30,8 @@ export function isPillarComplete(answers, slug) {
  * Pick growth / foundation pillars.
  * @param {Object<string, number>} scores slug -> score
  * @param {string[]} order slugs in framework order (tie-break order)
- * @returns {{growth: string, foundation: string, alsoAttention: string[]}}
+ * @returns {{growth: string, foundation: string, alsoAttention: string[],
+ *   allEqual: boolean, growthTied: boolean, foundationTied: boolean}}
  */
 export function pickPillars(scores, order) {
   let growth = order[0];
@@ -44,13 +45,21 @@ export function pickPillars(scores, order) {
     if (foundation === null || scores[slug] > scores[foundation]) foundation = slug;
   }
 
-  // Other pillars tied for lowest. The foundation pillar is left out: it can only
-  // tie for lowest when all five scores are equal, and listing it twice would confuse.
-  const alsoAttention = order.filter(
+  // When all five are equal there's no real "lowest", so nothing is flagged.
+  const allEqual = order.every((slug) => scores[slug] === scores[order[0]]);
+
+  // Other pillars tied for lowest (never the foundation pillar).
+  const alsoAttention = allEqual ? [] : order.filter(
     (slug) => slug !== growth && slug !== foundation && scores[slug] === scores[growth],
   );
 
-  return { growth, foundation, alsoAttention };
+  // Which picks were decided by the framework-order tie-break rather than a clear score.
+  const growthTied = order.some((slug) => slug !== growth && scores[slug] === scores[growth]);
+  const foundationTied = order.some(
+    (slug) => slug !== growth && slug !== foundation && scores[slug] === scores[foundation],
+  );
+
+  return { growth, foundation, alsoAttention, allEqual, growthTied, foundationTied };
 }
 
 /** Convenience: answers -> full results object. */

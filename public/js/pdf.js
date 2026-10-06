@@ -2,7 +2,7 @@
 // Same US Letter layout whatever device generates it.
 
 import { CONFIG } from './config.js';
-import { radarPoint, labelPlacement, GRID_STEPS, MAX_SCORE } from './radar.js';
+import { radarPoint, labelPlacement, tickPoint, GRID_STEPS, MAX_SCORE } from './radar.js';
 
 const PAGE = { w: 612, h: 792, margin: 48 }; // US Letter in points
 const INK = [28, 33, 32]; // #1C2120
@@ -51,6 +51,32 @@ async function rasterizeLogo(src) {
     return { dataUrl: canvas.toDataURL('image/png'), aspect };
   } finally {
     URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * Draw text with the browser's fonts (full Unicode, incl. CJK and RTL) and return it as a PNG.
+ * Sizes are in PDF points; the canvas is rendered at 4x for print sharpness.
+ */
+function renderTextImage(text, sizePt, rgb) {
+  try {
+    const scale = 4;
+    const px = sizePt * scale;
+    const font = `500 ${px}px Inter, system-ui, -apple-system, "Segoe UI", "Noto Sans", "Noto Sans CJK JP", "Hiragino Sans", "Microsoft YaHei", Arial, sans-serif`;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.font = font;
+    const width = Math.ceil(ctx.measureText(text).width) + 4;
+    const height = Math.ceil(px * 1.45);
+    canvas.width = width;
+    canvas.height = height;
+    ctx.font = font; // resizing the canvas resets its state
+    ctx.fillStyle = `rgb(${rgb.join(',')})`;
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(text, 2, Math.round(px * 1.12));
+    return { dataUrl: canvas.toDataURL('image/png'), width: width / scale, height: height / scale };
+  } catch (e) {
+    return null;
   }
 }
 
@@ -133,7 +159,20 @@ export async function downloadScorecardPdf(results, printName) {
   const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const name = (printName || '').trim();
   setBody(11, 'normal', GREY);
-  doc.text(name ? `${name}  ·  ${dateStr}` : dateStr, PAGE.margin, y);
+  // The name can be in any script (Łukasz, 山田, محمد…), which the PDF's built-in fonts can't
+  // draw, so it is rendered by the browser onto a canvas and placed as a crisp image.
+  const nameImg = name ? renderTextImage(name, 11, GREY) : null;
+  if (nameImg) {
+    const maxW = contentW - 180;
+    const w = Math.min(nameImg.width, maxW);
+    const h = nameImg.height * (w / nameImg.width);
+    doc.addImage(nameImg.dataUrl, 'PNG', PAGE.margin, y - h * 0.78, w, h);
+    doc.text(`·  ${dateStr}`, PAGE.margin + w + 8, y);
+  } else {
+    // Fallback if canvas is unavailable: keep only characters the built-in font can draw.
+    const safe = name.normalize('NFKD').replace(/[^\x20-\x7E\xA0-\xFF]/g, '').trim();
+    doc.text(safe ? `${safe}  ·  ${dateStr}` : dateStr, PAGE.margin, y);
+  }
   y += 18;
 
   // --- Scores panel + radar ------------------------------------------------
@@ -181,8 +220,8 @@ export async function downloadScorecardPdf(results, printName) {
   shape.forEach(([x, yy]) => doc.circle(x, yy, 2.2, 'F'));
   setBody(6.5, 'normal', GREY);
   GRID_STEPS.forEach((step) => {
-    const [x, yy] = radarPoint(0, n, step, cx, cy, r);
-    doc.text(String(step), x - 4, yy + 2.5, { align: 'right' });
+    const [x, yy] = tickPoint(step, n, cx, cy, r);
+    doc.text(String(step), x, yy + 2.3, { align: 'center' });
   });
   pillars.forEach((p, i) => {
     const pl = labelPlacement(i, n, cx, cy, r, 9);

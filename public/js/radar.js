@@ -11,6 +11,16 @@ export function radarPoint(i, n, value, cx, cy, r) {
   return [cx + dist * Math.cos(angle), cy + dist * Math.sin(angle)];
 }
 
+/**
+ * Where to put a scale number (5, 10 … 25). It sits on the grid edge between the top axis and
+ * the upper-left axis, which no data point can sit on (points only fall on axes).
+ */
+export function tickPoint(step, n, cx, cy, r) {
+  const [x1, y1] = radarPoint(0, n, step, cx, cy, r);
+  const [x2, y2] = radarPoint(n - 1, n, step, cx, cy, r);
+  return [(x1 + x2) / 2, (y1 + y2) / 2];
+}
+
 /** Where to put an axis label, and how to align it, based on which side of the chart it sits. */
 export function labelPlacement(i, n, cx, cy, r, gap) {
   const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
@@ -50,10 +60,10 @@ export function radarSvg(axes, { compact = false, title = 'Pillar scores radar c
     return `<line class="radar-spoke" x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}"/>`;
   }).join('');
 
-  // Scale numbers along the top axis, like the printed scorecard.
+  // Scale numbers between two axes, clear of the data points (which only sit on axes).
   const ticks = GRID_STEPS.map((step) => {
-    const [x, y] = radarPoint(0, n, step, cx, cy, r);
-    return `<text class="radar-tick" x="${(x - 7).toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${step}</text>`;
+    const [x, y] = tickPoint(step, n, cx, cy, r);
+    return `<text class="radar-tick" x="${x.toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="middle">${step}</text>`;
   }).join('');
 
   const dataPoints = axes.map((a, i) => radarPoint(i, n, a.score, cx, cy, r));

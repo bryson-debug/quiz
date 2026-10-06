@@ -79,12 +79,19 @@ export const CONFIG = {
       howHeading: 'How it works',
       steps: [
         'Rate 25 statements, five for each pillar, from 1 (Strongly Disagree) to 5 (Strongly Agree).',
-        "Go with your first instinct. There are no right or wrong answers, and nobody sees your responses but you.",
+        'Go with your first instinct. There are no right or wrong answers, just an honest snapshot of where you are today.',
+        "Enter your name and email to unlock your results. We'll send your personalized growth plan straight to your inbox.",
         'Discover your Growth Pillar, your Foundation Pillar and your personalized next steps.',
       ],
       button: "Let's Begin",
     },
     scale: { low: 'Strongly Disagree', high: 'Strongly Agree' },
+    question: {
+      next: 'Next',
+      // On the last pillar the button leads to the email gate / results.
+      finish: 'See My Results',
+      incomplete: 'Answer all 5 statements to continue.',
+    },
     gate: {
       heading: 'Your results are ready.',
       subtext: 'Enter your name and email to see your scorecard and personalized growth plan.',
@@ -98,6 +105,12 @@ export const CONFIG = {
       growthHeadingPrefix: 'Your Growth Plan:',
       trainingsHeading: 'Recommended EDGE Trainings',
       alsoAttentionLabel: 'Also worth your attention:',
+      // One-line definitions shown under "Your Pillar Scores".
+      growthDefinition: 'Your lowest-scoring pillar, where focused growth will make the biggest difference.',
+      foundationDefinition: 'Your strongest pillar, a strength to build on.',
+      // Shown when a pick was decided by framework order rather than a clear score.
+      tieAllEqual: 'All five of your scores are tied, so your Growth and Foundation Pillars were chosen by their order in the framework.',
+      tieSome: 'Some of your scores are tied. When pillars tie, the one that comes first in the framework is chosen.',
       supportHeading: 'The support you need',
       supportBody: 'Every training recommended above lives inside Elementary Music EDGE®, the professional development membership for elementary music teachers. Join to start your growth plan today, with on-demand trainings, ready-to-use resources and a community of music teachers who get it.',
       supportButton: 'Join Elementary Music EDGE®',
@@ -105,6 +118,9 @@ export const CONFIG = {
       nameFieldLabel: 'Name to print on your scorecard',
       downloadButton: 'Download My Scorecard',
       retake: 'Retake the Scorecard',
+      retakeConfirm: 'Start over? This clears your answers and results on this device.',
+      retakeYes: 'Yes, start over',
+      retakeNo: 'Cancel',
     },
     cookie: {
       text: 'This site uses cookies to improve your experience and measure our marketing.',

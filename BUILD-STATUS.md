@@ -1,6 +1,6 @@
 # Elementary Music Success Scorecard: Build Status
 
-_Last updated: October 6, 2026_
+_Last updated: October 6, 2026 (after QA round 1)_
 
 ## At a glance
 
@@ -79,6 +79,22 @@ _Last updated: October 6, 2026_
 - Rating buttons now span the full width of the question text.
 - Connected the 4 remaining Flodesk forms.
 
+### QA round 1 fixes (October 6)
+- All-equal scores no longer list "also worth your attention" pillars, and a note explains tie-break picks.
+- PDF prints any name correctly (Łukasz, 山田, etc.).
+- About page now mentions the email step, and the "nobody sees your responses" line is gone.
+- Tapping Next early says what's missing and jumps to it. Phones show "X of 5 answered" in the sticky bar.
+- Slimmer cookie bar on phones and an opaque nav bar.
+- Browser and phone Back move one quiz screen. Progress and results survive closed tabs and return visits.
+- The PDF name is prefilled from the email form, with an 80-character counter.
+- Growth and Foundation definitions appear under the scores.
+- Retake asks before clearing.
+- The EDGE button and logo open in a new tab.
+- Radar scale numbers no longer overlap data points.
+- The progress bar fills as you answer.
+- The last pillar's button says "See My Results".
+- Defensive styling for the embedded Flodesk form: hides the duplicate heading, stacks the fields full-width, keeps the fine print at 13px or more and uses the brand body font.
+
 ---
 
 ## Launch checklist
@@ -89,7 +105,8 @@ _Last updated: October 6, 2026_
 - [x] Squarespace URL Mapping `/audit -> https://audit.thatmusicteacher.com 301` (confirmed)
 - [x] 5 QUIZ segments exist in Flodesk
 - [ ] **Each form's settings checked:** correct segment only, double opt-in off, "show success message" (not redirect), consent text added (Step 3)
-- [ ] **Live end-to-end test** of all 5 pillars plus the tie case (Claude for Chrome brief prepared)
+- [x] **Live end-to-end test** of all 5 pillars plus the tie case (QA round 1, October 6; issues fixed)
+- [ ] **Delete the 8 `bryson+quiz-` test subscribers** in Flodesk (bulk archive isn't enabled for the account's Flodesk connection)
 - [ ] **5 pillar workflows** built in Flodesk and triggered by the QUIZ segments (none exist yet; Step 4)
 - [ ] **Meta Pixel ID** added
 - [ ] **GA4 Measurement ID** added

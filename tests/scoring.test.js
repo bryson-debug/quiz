@@ -73,8 +73,26 @@ test('all five equal: growth = Expectations & Procedures, foundation = Approache
     const r = pickPillars(s(v, v, v, v, v), ORDER);
     assert.equal(r.growth, EP);
     assert.equal(r.foundation, AP);
-    assert.deepEqual(r.alsoAttention, [ID, CP, TF]);
+    assert.deepEqual(r.alsoAttention, []);
+    assert.equal(r.allEqual, true);
+    assert.equal(r.growthTied, true);
+    assert.equal(r.foundationTied, true);
   }
+});
+
+test('tie flags: clear winner vs. tie-break', () => {
+  const clear = pickPillars(s(20, 12, 18, 25, 15), ORDER);
+  assert.equal(clear.allEqual, false);
+  assert.equal(clear.growthTied, false);
+  assert.equal(clear.foundationTied, false);
+
+  const tiedLow = pickPillars(s(20, 10, 22, 10, 10), ORDER);
+  assert.equal(tiedLow.growthTied, true);
+  assert.equal(tiedLow.foundationTied, false);
+
+  const tiedHigh = pickPillars(s(24, 8, 24, 24, 15), ORDER);
+  assert.equal(tiedHigh.growthTied, false);
+  assert.equal(tiedHigh.foundationTied, true);
 });
 
 test('four tied lowest with one higher', () => {

@@ -1,5 +1,6 @@
-// Quiz flow: intro -> 5 pillar screens -> email gate -> results.
-// Answers live in memory, mirrored to sessionStorage (no personal data).
+// Quiz flow: intro -> about -> 5 pillar screens -> email gate -> results.
+// Answers live in memory, mirrored to localStorage on this device (no personal data),
+// and each screen gets a browser-history entry so Back/forward move through the quiz.
 
 import { CONFIG } from './config.js';
 import { computeResults, isPillarComplete, STATEMENTS_PER_PILLAR } from './scoring.js';
@@ -12,6 +13,8 @@ const PILLARS = CONFIG.pillars;
 const ORDER = PILLARS.map((p) => p.slug);
 const BY_SLUG = Object.fromEntries(PILLARS.map((p) => [p.slug, p]));
 const STORAGE_KEY = 'ten-scorecard-v1';
+const STORAGE_MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000; // forget saved progress after ~6 months
+const NAME_MAX = 80;
 const COOKIE_KEY = 'ten-cookie-notice-dismissed';
 const COMPACT_CHART_MQ = window.matchMedia('(max-width: 599px)');
 
@@ -26,11 +29,25 @@ const emptyAnswers = () => Object.fromEntries(ORDER.map((slug) => [slug, Array(S
 
 let state = { screen: 'intro', step: 0, answers: emptyAnswers(), unlocked: false };
 let gateCleanup = null;
+// First name typed into the Flodesk form, kept in memory only to prefill the PDF name field.
+let gateFirstName = '';
+
+function readSaved() {
+  // localStorage survives closed tabs and later visits; fall back to an older sessionStorage copy.
+  for (const store of ['localStorage', 'sessionStorage']) {
+    try {
+      const raw = window[store].getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* storage blocked or corrupt */ }
+  }
+  return null;
+}
 
 function loadState() {
   try {
-    const saved = JSON.parse(window.sessionStorage.getItem(STORAGE_KEY) || 'null');
+    const saved = readSaved();
     if (!saved || typeof saved !== 'object') return;
+    if (saved.savedAt && Date.now() - saved.savedAt > STORAGE_MAX_AGE_MS) { clearState(); return; }
     const answers = emptyAnswers();
     for (const slug of ORDER) {
       const arr = saved.answers && saved.answers[slug];
@@ -44,21 +61,33 @@ function loadState() {
     const screen = ['intro', 'about', 'question', 'gate', 'results'].includes(saved.screen) ? saved.screen : 'intro';
     const step = Math.min(Math.max(Number(saved.step) || 0, 0), ORDER.length - 1);
     state = { screen, step, answers, unlocked: Boolean(saved.unlocked) };
-    // Never land on gate/results with incomplete answers.
-    if ((screen === 'gate' || screen === 'results') && !ORDER.every((s) => isPillarComplete(answers, s))) {
-      state.screen = 'question';
-    }
-    if (screen === 'results' && !state.unlocked) state.screen = 'gate';
   } catch (e) { /* storage blocked or corrupt: start fresh */ }
 }
 
 function saveState() {
-  try { window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* storage blocked */ }
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, savedAt: Date.now() }));
+  } catch (e) { /* storage blocked: progress just won't survive a reload */ }
 }
 
 function clearState() {
-  try { window.sessionStorage.removeItem(STORAGE_KEY); } catch (e) { /* storage blocked */ }
+  for (const store of ['localStorage', 'sessionStorage']) {
+    try { window[store].removeItem(STORAGE_KEY); } catch (e) { /* storage blocked */ }
+  }
   state = { screen: 'intro', step: 0, answers: emptyAnswers(), unlocked: false };
+  gateFirstName = '';
+}
+
+/** Adjust a requested screen so nobody lands somewhere they haven't earned yet. */
+function allowedScreen(screen, step) {
+  const complete = ORDER.every((s) => isPillarComplete(state.answers, s));
+  if ((screen === 'gate' || screen === 'results') && !complete) {
+    const firstIncomplete = ORDER.findIndex((s) => !isPillarComplete(state.answers, s));
+    return { screen: 'question', step: Math.max(firstIncomplete, 0) };
+  }
+  if (screen === 'results' && !state.unlocked) return { screen: 'gate', step };
+  if (screen === 'gate' && state.unlocked) return { screen: 'results', step };
+  return { screen, step };
 }
 
 // ---------------------------------------------------------------------------
@@ -91,9 +120,9 @@ function results() {
 function renderLogo() {
   const slot = document.getElementById('logo-slot');
   const img = `<img src="${esc(CONFIG.site.logoSrc)}" alt="${esc(CONFIG.site.logoAlt)}" width="120" height="34">`;
-  // Not a link during the quiz; on results it links to the TEN site.
+  // Not a link during the quiz; on results it links to the TEN site in a new tab (keeps results open).
   slot.innerHTML = state.screen === 'results'
-    ? `<a class="logo" href="${esc(CONFIG.site.brandUrl)}">${img}</a>`
+    ? `<a class="logo" href="${esc(CONFIG.site.brandUrl)}" target="_blank" rel="noopener">${img}</a>`
     : `<span class="logo">${img}</span>`;
 }
 
@@ -194,6 +223,8 @@ function questionHtml(step) {
   const { low, high } = CONFIG.copy.scale;
   const answered = answers.filter((a) => a !== null).length;
   const complete = answered === STATEMENTS_PER_PILLAR;
+  const q = CONFIG.copy.question;
+  const isLast = step === PILLARS.length - 1;
 
   const statements = p.statements.map((text, i) => {
     const name = `${p.slug}-${i}`;
@@ -205,7 +236,7 @@ function questionHtml(step) {
     }).join('');
     return `
       <li>
-        <fieldset class="statement">
+        <fieldset class="statement" data-statement="${i}">
           <legend><span class="statement__num" aria-hidden="true">${i + 1}</span><span>${esc(text)}</span></legend>
           <div class="rating">${radios}</div>
           <div class="rating__ends" aria-hidden="true"><span>${esc(low)}</span><span>${esc(high)}</span></div>
@@ -213,13 +244,13 @@ function questionHtml(step) {
       </li>`;
   }).join('');
 
-  const pct = ((step + 1) / PILLARS.length) * 100;
+  const pct = progressPct(step, answered);
   return `
     <section class="screen screen--question" aria-labelledby="screen-heading">
       <div class="progress">
         <p class="progress__label" id="progress-label">Pillar ${step + 1} of ${PILLARS.length}</p>
-        <div class="progress__track" role="progressbar" aria-labelledby="progress-label" aria-valuemin="1" aria-valuemax="${PILLARS.length}" aria-valuenow="${step + 1}">
-          <div class="progress__fill" style="width:${pct}%"></div>
+        <div class="progress__track" role="progressbar" aria-labelledby="progress-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="Pillar ${step + 1} of ${PILLARS.length}, ${answered} of ${STATEMENTS_PER_PILLAR} answered">
+          <div class="progress__fill" data-progress-fill style="width:${pct}%"></div>
         </div>
       </div>
       <h1 id="screen-heading" class="pillar-title" tabindex="-1">${esc(p.name)}</h1>
@@ -227,12 +258,11 @@ function questionHtml(step) {
       <p class="scale-hint">Rate each statement from <strong>1</strong> (${esc(low)}) to <strong>5</strong> (${esc(high)}).</p>
       <form class="statements-form" novalidate>
         <ol class="statements">${statements}</ol>
-        <p class="answer-count" data-count aria-hidden="true">${answered} of ${STATEMENTS_PER_PILLAR} answered</p>
         <div class="quiz-nav">
+          <p class="quiz-nav__status" data-count aria-live="polite">${answered} of ${STATEMENTS_PER_PILLAR} answered</p>
           <button type="button" class="btn btn--ghost" data-action="back">Back</button>
-          <p class="quiz-nav__status" data-count-wide>${answered} of ${STATEMENTS_PER_PILLAR} answered</p>
-          <button type="submit" class="btn" data-action="next"${complete ? '' : ' disabled'} aria-describedby="next-hint">Next</button>
-          <span id="next-hint" class="visually-hidden">${complete ? '' : 'Answer all 5 statements to continue.'}</span>
+          <button type="submit" class="btn${complete ? '' : ' is-disabled'}" data-action="next" aria-disabled="${complete ? 'false' : 'true'}" aria-describedby="next-hint">${esc(isLast ? q.finish : q.next)}</button>
+          <span id="next-hint" class="visually-hidden">${complete ? '' : esc(q.incomplete)}</span>
         </div>
       </form>
     </section>`;
@@ -283,6 +313,8 @@ function resultsHtml() {
     ? `<p class="also"><strong>${esc(c.alsoAttentionLabel)}</strong> ${r.alsoAttention.map((s) => esc(BY_SLUG[s].name)).join(', ')}</p>`
     : '';
 
+  const tieNote = r.allEqual ? c.tieAllEqual : (r.growthTied || r.foundationTied) ? c.tieSome : '';
+
   return `
     <section class="screen screen--results" aria-labelledby="screen-heading">
       <header class="results-hero">
@@ -295,6 +327,11 @@ function resultsHtml() {
         <div class="score-list">
           <h2>${esc(c.scoresHeading)}</h2>
           <ul>${scoreItems}</ul>
+          <dl class="score-legend">
+            <div><dt><span class="tag">Growth</span></dt><dd>${esc(c.growthDefinition)}</dd></div>
+            <div><dt><span class="tag">Foundation</span></dt><dd>${esc(c.foundationDefinition)}</dd></div>
+          </dl>
+          ${tieNote ? `<p class="tie-note">${esc(tieNote)}</p>` : ''}
         </div>
       </div>
 
@@ -315,20 +352,28 @@ function resultsHtml() {
       <section class="support" aria-labelledby="support-h">
         <h2 id="support-h">${esc(c.supportHeading)}</h2>
         <p>${esc(c.supportBody)}</p>
-        <a class="btn" data-action="edge" href="${esc(edgeUrl(growth.slug))}">${esc(c.supportButton)}</a>
+        <a class="btn" data-action="edge" href="${esc(edgeUrl(growth.slug))}" target="_blank" rel="noopener">${esc(c.supportButton)}<span class="visually-hidden"> (opens in a new tab)</span></a>
       </section>
 
       <section class="download" aria-labelledby="download-h" data-clarity-mask="true">
         <h2 id="download-h">${esc(c.downloadHeading)}</h2>
         <div class="field">
           <label for="print-name">${esc(c.nameFieldLabel)}</label>
-          <input id="print-name" type="text" autocomplete="name" maxlength="80">
+          <input id="print-name" type="text" autocomplete="name" maxlength="${NAME_MAX}" value="${esc(gateFirstName.slice(0, NAME_MAX))}" aria-describedby="print-name-count">
+          <small id="print-name-count" class="field__count" data-name-count>${gateFirstName.slice(0, NAME_MAX).length}/${NAME_MAX}</small>
         </div>
         <button type="button" class="btn" data-action="download">${esc(c.downloadButton)}</button>
         <p class="download-status" data-download-status role="status"></p>
       </section>
 
-      <p class="retake"><button type="button" class="link-btn" data-action="retake">${esc(c.retake)}</button></p>
+      <div class="retake" data-retake>
+        <button type="button" class="link-btn" data-action="retake">${esc(c.retake)}</button>
+        <div class="retake__confirm" data-retake-confirm hidden>
+          <p>${esc(c.retakeConfirm)}</p>
+          <button type="button" class="btn" data-action="retake-yes">${esc(c.retakeYes)}</button>
+          <button type="button" class="btn btn--ghost" data-action="retake-no">${esc(c.retakeNo)}</button>
+        </div>
+      </div>
     </section>`;
 }
 
@@ -346,12 +391,33 @@ function renderChart() {
 }
 COMPACT_CHART_MQ.addEventListener?.('change', renderChart);
 
-function go(screen, step = state.step, { focus = true } = {}) {
+/**
+ * Move to a screen. `history`: 'push' adds a browser-history entry (normal navigation),
+ * 'replace' swaps the current one (e.g. gate -> results, so Back skips the gate),
+ * 'none' is used when responding to the browser's own Back/forward.
+ */
+function go(screen, step = state.step, { focus = true, history = 'push' } = {}) {
   if (gateCleanup) { gateCleanup(); gateCleanup = null; }
+  ({ screen, step } = allowedScreen(screen, step));
   state.screen = screen;
   state.step = step;
   saveState();
+  const entry = { quiz: { screen, step } };
+  try {
+    if (history === 'push') window.history.pushState(entry, '');
+    else if (history === 'replace') window.history.replaceState(entry, '');
+  } catch (e) { /* history unavailable (e.g. sandboxed iframe) */ }
   render({ focus });
+}
+
+window.addEventListener('popstate', (e) => {
+  const target = e.state && e.state.quiz;
+  if (!target) return;
+  go(target.screen, target.step, { history: 'none' });
+});
+
+function progressPct(step, answered) {
+  return Math.round(((step + answered / STATEMENTS_PER_PILLAR) / PILLARS.length) * 100);
 }
 
 function render({ focus = true } = {}) {
@@ -392,30 +458,54 @@ function bindAbout() {
 
 function bindQuestion() {
   const p = PILLARS[state.step];
+  const q = CONFIG.copy.question;
   const form = $main.querySelector('form');
   const next = form.querySelector('[data-action="next"]');
   const hint = form.querySelector('#next-hint');
+  const count = form.querySelector('[data-count]');
+  const bar = $main.querySelector('[data-progress-fill]');
+  const progressTrack = $main.querySelector('[role="progressbar"]');
 
   const update = () => {
     const answered = state.answers[p.slug].filter((a) => a !== null).length;
     const complete = answered === STATEMENTS_PER_PILLAR;
-    next.disabled = !complete;
-    hint.textContent = complete ? '' : 'Answer all 5 statements to continue.';
-    const text = `${answered} of ${STATEMENTS_PER_PILLAR} answered`;
-    form.querySelectorAll('[data-count], [data-count-wide]').forEach((el) => { el.textContent = text; });
+    next.classList.toggle('is-disabled', !complete);
+    next.setAttribute('aria-disabled', String(!complete));
+    hint.textContent = complete ? '' : q.incomplete;
+    count.textContent = `${answered} of ${STATEMENTS_PER_PILLAR} answered`;
+    count.classList.remove('is-warning');
+    const pct = progressPct(state.step, answered);
+    bar.style.width = `${pct}%`;
+    progressTrack.setAttribute('aria-valuenow', pct);
+    progressTrack.setAttribute('aria-valuetext', `Pillar ${state.step + 1} of ${PILLARS.length}, ${answered} of ${STATEMENTS_PER_PILLAR} answered`);
   };
 
   form.addEventListener('change', (e) => {
     const input = e.target;
     if (input.type !== 'radio') return;
     state.answers[p.slug][Number(input.dataset.index)] = Number(input.value);
+    input.closest('.statement').classList.remove('statement--missing');
     saveState();
     update();
   });
 
+  // Next stays clickable: if something's unanswered, say so and jump to it.
+  const flagMissing = () => {
+    const missing = state.answers[p.slug]
+      .map((a, i) => (a === null ? i : -1))
+      .filter((i) => i >= 0);
+    missing.forEach((i) => form.querySelector(`[data-statement="${i}"]`).classList.add('statement--missing'));
+    count.textContent = q.incomplete;
+    count.classList.add('is-warning');
+    const first = form.querySelector(`[data-statement="${missing[0]}"]`);
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    first.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    first.querySelector('input').focus({ preventScroll: true });
+  };
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (!isPillarComplete(state.answers, p.slug)) return;
+    if (!isPillarComplete(state.answers, p.slug)) { flagMissing(); return; }
     track.pillarCompleted(p.name, state.step + 1);
     if (state.step < PILLARS.length - 1) {
       go('question', state.step + 1);
@@ -439,7 +529,8 @@ function bindGate() {
 
   const reveal = () => {
     state.unlocked = true;
-    go('results');
+    // Replace the gate's history entry so browser Back from results returns to the questions.
+    go('results', state.step, { history: 'replace' });
   };
 
   gateCleanup = mountGateForm(host, r.growth, {
@@ -448,7 +539,9 @@ function bindGate() {
       loading.hidden = true;
       blocked.hidden = false;
     },
-    onSuccess: () => {
+    onSuccess: (how, { firstName = '' } = {}) => {
+      // Kept in memory only, to prefill the PDF name field. Never stored or sent to trackers.
+      gateFirstName = firstName;
       // Pillar name only. Never the name/email typed into the form.
       track.lead(BY_SLUG[r.growth].name);
       reveal();
@@ -488,7 +581,24 @@ function bindResults() {
     }
   });
 
-  $main.querySelector('[data-action="retake"]').addEventListener('click', () => {
+  const nameInput = $main.querySelector('#print-name');
+  const nameCount = $main.querySelector('[data-name-count]');
+  nameInput.addEventListener('input', () => { nameCount.textContent = `${nameInput.value.length}/${NAME_MAX}`; });
+
+  // Retake asks first, since it wipes the saved results.
+  const retakeBtn = $main.querySelector('[data-action="retake"]');
+  const confirmBox = $main.querySelector('[data-retake-confirm]');
+  retakeBtn.addEventListener('click', () => {
+    retakeBtn.hidden = true;
+    confirmBox.hidden = false;
+    confirmBox.querySelector('[data-action="retake-no"]').focus();
+  });
+  confirmBox.querySelector('[data-action="retake-no"]').addEventListener('click', () => {
+    confirmBox.hidden = true;
+    retakeBtn.hidden = false;
+    retakeBtn.focus();
+  });
+  confirmBox.querySelector('[data-action="retake-yes"]').addEventListener('click', () => {
     clearState();
     go('intro', 0);
   });
@@ -509,4 +619,6 @@ initTracking();
 loadState();
 renderFooter();
 setupCookieBar();
+({ screen: state.screen, step: state.step } = allowedScreen(state.screen, state.step));
+try { window.history.replaceState({ quiz: { screen: state.screen, step: state.step } }, ''); } catch (e) { /* ignore */ }
 render({ focus: false });
