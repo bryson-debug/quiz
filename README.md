@@ -62,8 +62,8 @@ Replace `public/assets/ten-logo-black.svg`, `og-image.png` (1200×630), `favicon
 - [ ] Placeholder pillar copy and recommended trainings replaced in config
 - [ ] Meta Pixel, GA4 and Clarity IDs added; Clarity masking set to Strict
 - [ ] Privacy policy at thatmusicteacher.com/privacy updated to name Meta Pixel and Microsoft Clarity (including session recording and heatmaps)
-- [ ] CNAME added in Squarespace DNS and domain verified in Vercel
-- [ ] Squarespace URL Mapping `/audit -> https://audit.thatmusicteacher.com 301` added
+- [x] CNAME added in Squarespace DNS and domain verified in Vercel
+- [x] Squarespace URL Mapping `/audit -> https://audit.thatmusicteacher.com 301` added
 - [ ] Submitted a real test through the Flodesk form, confirmed the subscriber landed in the right segment, and confirmed the Lead event fired (Meta Events Manager test events)
 - [ ] Tested with an ad blocker on, to confirm the "Show my results" fallback works
 - [ ] Took the full quiz on a real iPhone, a real Android phone, an iPad or tablet, and a desktop browser, including the PDF download on each
