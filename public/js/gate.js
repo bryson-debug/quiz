@@ -8,8 +8,10 @@
 //      reveal after `submitFallbackMs` if the form's fields are valid.
 // Never trap the user: if the form hasn't rendered after `renderTimeoutMs`
 // (e.g. assets.flodesk.com blocked), show a "Show my results" button.
+// Flodesk's script itself is only loaded here, on the first gate view (flodesk-loader.js).
 
 import { CONFIG, isPlaceholder } from './config.js';
+import { loadFlodesk } from './flodesk-loader.js';
 
 const SUCCESS_SELECTORS = [
   '[data-ff-stage="success"]',
@@ -139,6 +141,9 @@ export function mountGateForm(host, growthSlug, { onSuccess, onBlocked, onRender
   }
 
   try {
+    // First gate view loads Flodesk; later views (e.g. a Retake landing on another pillar)
+    // reuse it. window.fd queues the call until Flodesk's script is ready.
+    loadFlodesk();
     if (typeof window.fd !== 'function') throw new Error('Flodesk script not available');
     window.fd('form', { formId, containerEl: `#${containerId}` });
   } catch (e) {

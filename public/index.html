@@ -32,9 +32,8 @@
   <link rel="preload" href="/fonts/ArchivoBlack-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="/css/styles.css">
 
-  <!-- Flodesk universal script (forms are initialized only when the email gate is shown).
-       A classic, blocking script so it runs at the same point as the old inline snippet. -->
-  <script src="/js/flodesk-loader.js"></script>
+  <!-- Flodesk's universal script is NOT loaded here: js/flodesk-loader.js loads it the first
+       time the email gate renders, so Flodesk only sees visitors who reach the gate. -->
 
   <script type="module" src="/js/app.js"></script>
 </head>
