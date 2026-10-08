@@ -44,7 +44,7 @@ export const CONFIG = {
 
   // --- Links ----------------------------------------------------------------
   links: {
-    edgeBase: 'https://www.thatmusicteacher.com/EDGE',
+    edgeBase: 'https://www.thatmusicteacher.com/edge',
     edgeUtm: {
       utm_source: 'pillar-quiz',
       utm_medium: 'quiz',
@@ -55,7 +55,7 @@ export const CONFIG = {
     terms: 'https://www.thatmusicteacher.com/tou',
     disclaimer: 'https://www.thatmusicteacher.com/disclaimer',
     contact: 'mailto:hello@thatmusicteacher.com',
-    pdfFooterLink: 'thatmusicteacher.com/EDGE',
+    pdfFooterLink: 'thatmusicteacher.com/edge',
   },
 
   // --- Screen copy ----------------------------------------------------------
@@ -137,7 +137,7 @@ export const CONFIG = {
       title: 'My Elementary Music Success Scorecard',
       scoresHeading: 'My Pillar Scores',
       footerCopyright: '© {year} That Music Teacher, LLC d/b/a Tarbet Education Network',
-      footerCta: 'Continue your growth plan: thatmusicteacher.com/EDGE',
+      footerCta: 'Continue your growth plan: thatmusicteacher.com/edge',
     },
   },
 
