@@ -17,13 +17,16 @@ const SUCCESS_SELECTORS = [
   '[class*="success"]',
 ];
 
-/** Form ID for a pillar, falling back to the default form while it's a placeholder. */
-export function formIdFor(slug) {
-  const { forms, fallbackPillar } = CONFIG.flodesk;
+/**
+ * Form ID for a pillar's growth form, or null if it's missing or still a placeholder.
+ * No fallback to another pillar's form: that would silently put people in the wrong
+ * segment and workflow. A missing ID logs an error and the gate shows its fallback.
+ */
+export function formIdFor(slug, forms = CONFIG.flodesk.forms) {
   const id = forms[slug];
   if (!isPlaceholder(id)) return id;
-  console.warn(`[gate] Flodesk form ID for "${slug}" is still a placeholder; using the "${fallbackPillar}" form instead.`);
-  return forms[fallbackPillar];
+  console.error(`[gate] No Flodesk form ID configured for "${slug}" (config.flodesk.forms). Showing the fallback instead of the form.`);
+  return null;
 }
 
 function isVisible(el) {
@@ -72,6 +75,11 @@ function hasRenderedForm(container) {
  */
 export function mountGateForm(host, growthSlug, { onSuccess, onBlocked, onRendered = () => {} }) {
   const formId = formIdFor(growthSlug);
+  if (!formId) {
+    host.innerHTML = '';
+    onBlocked();
+    return () => {};
+  }
   const containerId = `fd-form-${formId}`;
   host.innerHTML = '';
   const container = document.createElement('div');

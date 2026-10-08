@@ -4,8 +4,8 @@
 //
 // Anything still starting with "PLACEHOLDER" is treated as "not set yet":
 //   - Tracking IDs: that tracker is skipped entirely.
-//   - Flodesk form IDs: the Expectations & Procedures form is used instead
-//     (with a console warning) so the flow can still be tested.
+//   - Flodesk form IDs: that pillar's gate logs a console error and shows the
+//     "Show my results" fallback (never another pillar's form).
 // =============================================================================
 
 export const CONFIG = {
@@ -34,8 +34,6 @@ export const CONFIG = {
       'curriculum-planning': '6ac3b81e147b36f92f884773',
       'teacher-fulfillment': '6ac3b8379c6b79a7586772e7',
     },
-    // Used while a pillar's form ID is still a placeholder.
-    fallbackPillar: 'expectations-procedures',
     // If the form hasn't rendered by then (e.g. an ad blocker), offer a way through.
     renderTimeoutMs: 6000,
     // Only used when Flodesk gives no success signal after a submit.
