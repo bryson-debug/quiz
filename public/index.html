@@ -33,28 +33,9 @@
   <link rel="preload" href="/fonts/ArchivoBlack-Regular.ttf" as="font" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="/css/styles.css">
 
-  <!-- Flodesk universal script (forms are initialized only when the email gate is shown) -->
-  <script>
-    (function(w, d, t, h, s, n) {
-      w.FlodeskObject = n;
-      var fn = function() {
-        (w[n].q = w[n].q || []).push(arguments);
-      };
-      w[n] = w[n] || fn;
-      var f = d.getElementsByTagName(t)[0];
-      var v = '?v=' + Math.floor(new Date().getTime() / (120 * 1000)) * 60;
-      var sm = d.createElement(t);
-      sm.async = true;
-      sm.type = 'module';
-      sm.src = h + s + '.mjs' + v;
-      f.parentNode.insertBefore(sm, f);
-      var sn = d.createElement(t);
-      sn.async = true;
-      sn.noModule = true;
-      sn.src = h + s + '.js' + v;
-      f.parentNode.insertBefore(sn, f);
-    })(window, document, 'script', 'https://assets.flodesk.com', '/universal', 'fd');
-  </script>
+  <!-- Flodesk universal script (forms are initialized only when the email gate is shown).
+       A classic, blocking script so it runs at the same point as the old inline snippet. -->
+  <script src="/js/flodesk-loader.js"></script>
 
   <script type="module" src="/js/app.js"></script>
 </head>

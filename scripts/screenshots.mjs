@@ -29,8 +29,15 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.json': 'application/json',
 };
+// Send the same headers Vercel would (vercel.json), so CSP report-only violations show up here too.
+const vercel = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
+const headersFor = (pathname) => Object.fromEntries((vercel.headers || [])
+  .filter((rule) => new RegExp(`^${rule.source}$`).test(pathname))
+  .flatMap((rule) => rule.headers.map((h) => [h.key, h.value])));
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
+  Object.entries(headersFor(url.pathname)).forEach(([k, v]) => res.setHeader(k, v));
   let file = path.join(pub, decodeURIComponent(url.pathname));
   if (!file.startsWith(pub)) { res.writeHead(403).end(); return; }
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
@@ -47,6 +54,7 @@ const heights = { 360: 740, 375: 667, 390: 844, 768: 1024, 1024: 768, 1280: 800,
 const args = process.env.HTTPS_PROXY ? [`--proxy-server=${process.env.HTTPS_PROXY}`, '--proxy-bypass-list=127.0.0.1;localhost'] : [];
 const browser = await chromium.launch({ args });
 const problems = [];
+const cspViolations = new Set();
 
 async function checkOverflow(page, label) {
   const o = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
@@ -72,7 +80,11 @@ for (const w of widths) {
   });
   const page = await context.newPage();
   page.on('pageerror', (e) => problems.push(`${w}px page error: ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error') problems.push(`${w}px console error: ${m.text()}`); });
+  page.on('console', (m) => {
+    const text = m.text();
+    if (/Content Security Policy|Report Only/i.test(text)) cspViolations.add(text.replace(/\s+/g, ' ').slice(0, 300));
+    else if (m.type() === 'error') problems.push(`${w}px console error: ${text}`);
+  });
 
   await page.goto(base, { waitUntil: 'networkidle' }).catch(() => page.goto(base));
   await page.evaluate(() => document.fonts.ready);
@@ -182,5 +194,6 @@ for (const [w, h] of [[844, 390], [1180, 820]]) {
 
 await browser.close();
 server.close();
+console.log(cspViolations.size ? `\nCSP report-only violations:\n- ${[...cspViolations].join('\n- ')}` : '\nNo CSP report-only violations.');
 console.log(problems.length ? `\nIssues:\n- ${problems.join('\n- ')}` : '\nNo issues found.');
 console.log(`Screenshots in ${outDir}`);
