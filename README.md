@@ -72,3 +72,4 @@ Replace `public/assets/ten-logo-black.svg`, `og-image.png` (1200×630), `favicon
 
 - `public/vendor/jspdf.umd.min.js`: jsPDF 4.2.1 (MIT)
 - `public/fonts/ArchivoBlack-Regular.ttf`: Archivo Black (SIL Open Font License 1.1)
+- `public/fonts/inter-*.woff2`: Inter 4 via Fontsource 5.3.0, Latin + Latin Extended, weights 400–700 (SIL Open Font License 1.1, `public/fonts/Inter-OFL.txt`)
