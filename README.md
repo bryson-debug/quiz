@@ -61,6 +61,8 @@ Replace `public/assets/ten-logo-black.svg`, `og-image.png` (1200×630), `favicon
 - [ ] Real TEN black logo, OG image and favicon added
 - [ ] Placeholder pillar copy and recommended trainings replaced in config
 - [ ] Meta Pixel, GA4 and Clarity IDs added; Clarity masking set to Strict
+- [ ] Meta Events Manager: Automatic Advanced Matching turned off for the pixel
+- [ ] Content-Security-Policy switched from report-only to enforced (after checking the live console with trackers and the real Flodesk form)
 - [ ] Privacy policy at thatmusicteacher.com/privacy updated to name Meta Pixel and Microsoft Clarity (including session recording and heatmaps)
 - [x] CNAME added in Squarespace DNS and domain verified in Vercel
 - [x] Squarespace URL Mapping `/audit -> https://audit.thatmusicteacher.com 301` added
@@ -72,3 +74,4 @@ Replace `public/assets/ten-logo-black.svg`, `og-image.png` (1200×630), `favicon
 
 - `public/vendor/jspdf.umd.min.js`: jsPDF 4.2.1 (MIT)
 - `public/fonts/ArchivoBlack-Regular.ttf`: Archivo Black (SIL Open Font License 1.1)
+- `public/fonts/inter-*.woff2`: Inter 4 via Fontsource 5.3.0, Latin + Latin Extended, weights 400–700 (SIL Open Font License 1.1, `public/fonts/Inter-OFL.txt`)

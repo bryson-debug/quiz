@@ -533,8 +533,16 @@ function bindGate() {
     go('results', state.step, { history: 'replace' });
   };
 
+  // Once the real form has rendered, the "Show my results" escape hatch must go away for good,
+  // even if it appeared first (form slower than the render timeout).
+  let formRendered = false;
+
   gateCleanup = mountGateForm(host, r.growth, {
-    onRendered: () => { loading.hidden = true; },
+    onRendered: () => {
+      formRendered = true;
+      loading.hidden = true;
+      blocked.hidden = true;
+    },
     onBlocked: () => {
       loading.hidden = true;
       blocked.hidden = false;
@@ -548,7 +556,10 @@ function bindGate() {
     },
   });
 
-  blocked.querySelector('[data-action="skip-gate"]').addEventListener('click', reveal);
+  blocked.querySelector('[data-action="skip-gate"]').addEventListener('click', () => {
+    if (formRendered) return; // the form is available, so the skip no longer applies
+    reveal();
+  });
   $main.querySelector('[data-action="back"]').addEventListener('click', () => go('question', PILLARS.length - 1));
 }
 

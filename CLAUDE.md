@@ -15,6 +15,7 @@ statements (5 pillars × 5), see a radar chart, and learn their **Growth Pillar*
 - `public/js/pdf.js`: in-browser PDF via vendored jsPDF (`public/vendor/jspdf.umd.min.js`, MIT, v4.2.1),
   lazy-loaded on the results screen.
 - `public/js/tracking.js`: Meta Pixel / GA4 / Clarity. `public/js/app.js`: screens and flow.
+- `public/js/flodesk-loader.js`: Flodesk's embed snippet as `loadFlodesk()`, called once by gate.js.
 - `scripts/screenshots.mjs`: headless full-flow check + screenshots (`npm run screenshots`).
 
 ## Flow
@@ -26,8 +27,11 @@ Next looks disabled (`aria-disabled`, not `disabled`) until all 5 statements are
 early shows "Answer all 5 statements to continue." in the nav bar and highlights/scrolls to the missing
 statements. The last pillar's button says "See My Results". The progress bar fills as answers are given
 ((pillar − 1 + answered/5) / 5). Back keeps answers. No totals are shown during the quiz.
-Answers + screen + gate unlock are saved to `localStorage` (`ten-scorecard-v1`, with `savedAt`; expires
-after ~180 days) so progress and results survive closed tabs and later visits on the same device.
+Quiz state (answers, screen, step, gate unlock, `savedAt`) is saved in the visitor's browser in
+**`localStorage`** under `ten-scorecard-v1` (expires after ~180 days), so progress and results survive
+closed tabs and later visits on the same device. (An older `sessionStorage` copy under the same key is
+read once as a fallback and cleared on Retake.) `localStorage` also holds `ten-cookie-notice-dismissed`.
+Nothing else is stored, and nothing is stored on a server.
 Each screen gets a browser-history entry (`pushState`), so browser/phone Back moves one screen; revealing
 results *replaces* the gate entry, so Back from results returns to the last pillar. `allowedScreen()`
 guards every navigation (no gate/results with incomplete answers, no results without the unlock).
@@ -59,19 +63,33 @@ Statement wording and pillar descriptions are approved copy. Don't edit them wit
 
 ## Privacy model
 
-- The quiz stores **no personal data** on our side: no backend, database or API keys. Scoring runs in the browser.
+- No backend, database or API keys. Scoring runs in the browser; nothing is stored on a server we run.
+- On the visitor's device, `localStorage` holds the quiz state (`ten-scorecard-v1`: individual answers,
+  screen, unlock flag; no name or email) and `ten-cookie-notice-dismissed`. See Flow.
 - Name + email are collected **only inside the embedded Flodesk form**; Flodesk stores them.
 - The optional "Name to print on your scorecard" field is used only inside the PDF, never stored or sent.
   It is prefilled with the first name typed into the Flodesk form, read at submit time and kept in memory
   only (not saved to storage, never sent to trackers).
-- `localStorage` holds only answers, screen and the unlock flag (no name/email).
-- **Never send names, emails or individual answers to any tracker.** Only pillar names, steps, scores.
-- Gate section and the PDF-name section carry `data-clarity-mask="true"`. Clarity masking should be **Strict**.
+- **Never send names, emails or individual answers to any tracker.** What trackers do receive (once their
+  IDs are set): page views, quiz-progress events (pillar name and step number), and the **growth pillar
+  name** on the Lead/`generate_lead` and EdgeCTAClick/`edge_cta_click` events, sent to both Meta and GA4.
+  No scores are sent. Trackers load on every page view.
+- Third parties that see a visitor: Meta, Google (GA4) and Microsoft (Clarity) on every page view once
+  their IDs are set; **Flodesk only once the email gate renders** (its script is loaded there, not on
+  page load). No Google Fonts: Inter and Archivo Black are self-hosted.
+- Meta pixel: `fbq('set', 'autoConfig', false, id)` runs before `init`, so it doesn't auto-collect from
+  the page or the Flodesk form. **Automatic Advanced Matching must also be OFF in Meta Events Manager**
+  (a dashboard setting the code can't control).
+- Clarity: `<main>` (every screen: ratings, scores, results) and the screen-reader status region carry
+  `data-clarity-mask="true"`, in addition to the gate and PDF-name sections. Set Clarity masking to **Strict**.
 
 ## Flodesk
 
-- Universal script loads once in `<head>` (index.html). The form is initialized only when the gate
-  screen renders: container `<div id="fd-form-{formId}">` + `window.fd('form', { formId, containerEl })`.
+- Flodesk's universal script is **not** in index.html. The first time the gate renders, gate.js calls
+  `loadFlodesk()` (`js/flodesk-loader.js`, Flodesk's embed snippet unchanged, runs once), then mounts
+  the form: container `<div id="fd-form-{formId}">` + `window.fd('form', { formId, containerEl })`.
+  `window.fd` queues calls until Flodesk's script arrives, so later gate views (e.g. a Retake on a
+  different pillar) reuse the loaded script.
 - One form per **growth pillar**; each adds the subscriber to that pillar's segment → pillar workflow.
 
 | Growth pillar | Form ID |
@@ -82,8 +100,9 @@ Statement wording and pillar descriptions are approved copy. Don't edit them wit
 | Curriculum & Planning | `6ac3b81e147b36f92f884773` |
 | Teacher Fulfillment | `6ac3b8379c6b79a7586772e7` |
 
-All five IDs are real. If an ID is ever set back to a `PLACEHOLDER…` value, the Expectations & Procedures
-form is used instead and a console warning is logged.
+All five IDs are real. A missing or `PLACEHOLDER…` ID does **not** fall back to another pillar's form
+(that would tag people with the wrong pillar): `formIdFor()` returns null, logs `console.error`, and the
+gate shows its "Show my results" fallback straight away. Covered by `tests/gate.test.js`.
 
 Submission detection (`gate.js`):
 1. MutationObserver on the container: `[data-ff-stage="success"]` reveals results immediately. Looser
@@ -91,7 +110,8 @@ Submission detection (`gate.js`):
 2. Capture-phase `submit` listener: if the form is valid and no success state appears within
    `submitFallbackMs` (1.5s), reveal anyway unless a visible error (`data-ff-stage="error"`, `aria-invalid`) shows.
 3. If no form has rendered after `renderTimeoutMs` (6s), e.g. an ad blocker on assets.flodesk.com,
-   show a message + "Show my results". This path does **not** fire the Lead event.
+   show a message + "Show my results". This path does **not** fire the Lead event. If the form renders
+   after that (slow network), the fallback panel is hidden again and its button is ignored.
 The Flodesk DOM selectors were verified against a simulated form only (assets.flodesk.com was blocked
 from the build sandbox). Verify against the live form; adjust `SUCCESS_SELECTORS` in gate.js if needed.
 Live QA (2026-10-06) confirmed each pillar's form is used and results appear after submit.
@@ -114,12 +134,14 @@ fine print ≥ 13px); they use guessed Flodesk class patterns, so the editor set
 | Join EDGE clicked | custom `EdgeCTAClick` {growth_pillar} | `edge_cta_click` {growth_pillar} |
 | PDF downloaded | custom `ScorecardDownloaded` | `scorecard_download` |
 
-Clarity: standard snippet. Trackers load on page load. The cookie bar is a notice, not a consent gate
-(dismissal stored in `localStorage` key `ten-cookie-notice-dismissed`).
+The growth pillar *name* (e.g. "Inclusion & Differentiation") is what's sent on the Lead and EDGE-click
+events, to both Meta and GA4. Clarity: standard snippet. Trackers load on page load. The cookie bar is a
+notice, not a consent gate (dismissal stored in `localStorage` key `ten-cookie-notice-dismissed`).
 
 ## Links
 
-- EDGE CTA: `https://www.thatmusicteacher.com/EDGE?utm_source=pillar-quiz&utm_medium=quiz&utm_campaign=scorecard&utm_content={growth-slug}`
+- EDGE CTA: `https://www.thatmusicteacher.com/edge?utm_source=pillar-quiz&utm_medium=quiz&utm_campaign=scorecard&utm_content={growth-slug}`
+  (lowercase `/edge`: `/EDGE` returns 404). The PDF footer also says `thatmusicteacher.com/edge`.
 - Privacy /privacy, Terms /tou, Disclaimer /disclaimer on thatmusicteacher.com; Contact mailto:hello@thatmusicteacher.com.
 - Footer links always open in a new tab (so progress is never lost). The EDGE button and the results-page
   logo also open in a new tab, so the teacher keeps their results.
@@ -133,7 +155,8 @@ Clarity: standard snippet. Trackers load on page load. The cookie bar is a notic
 - Near-black `#1C2120`: text, headlines, buttons. White background. Secondary grey `#586260`.
 - Headings: uppercase, `"Arial Black", "Archivo Black"`. Archivo Black is **self-hosted**
   (`public/fonts/`, SIL OFL) so phones without Arial Black still get a heavy heading; use
-  `font-weight: 400` (no faux bold). Body: Inter from Google Fonts. The PDF embeds Archivo Black.
+  `font-weight: 400` (no faux bold). Body: Inter, **self-hosted** woff2 in `public/fonts/` (weights
+  400–700, Latin + Latin Extended, SIL OFL; Google Fonts was removed). The PDF embeds Archivo Black.
 - Calm and spacious, mint blocks and soft circles as decoration (`.decor`, tablet and up). No bright accents.
 - Placeholders: `public/assets/ten-logo-black.svg`, `og-image.png`, `favicon.svg/png`, `apple-touch-icon.png`.
 
@@ -152,6 +175,22 @@ Clarity: standard snippet. Trackers load on page load. The cookie bar is a notic
   any script (Polish, CJK, Arabic…) prints correctly; config copy uses Helvetica/Archivo Black.
 - Focus moves to the screen heading on every screen change; a polite live region announces progress.
   `prefers-reduced-motion` disables transitions.
+
+## Security headers (vercel.json)
+
+All paths get `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+`Permissions-Policy: camera=(), microphone=(), geolocation=()`, `X-Frame-Options: DENY`, and a
+**report-only** `Content-Security-Policy-Report-Only` (nothing is blocked yet; violations only show in
+the browser console). The policy allows self, Flodesk (`assets.flodesk.com`, `*.flodesk.com`) and the
+Meta Pixel, GA4 and Clarity origins; `img-src` includes `data:`/`blob:` (PDF logo), `style-src` has
+`'unsafe-inline'` (inline style attributes); `frame-ancestors 'none'`, `base-uri 'self'`,
+`object-src 'none'`, `form-action 'self' https://*.flodesk.com`. There are no inline scripts (keep it
+that way, so no hashes are needed). `npm run screenshots` serves vercel.json's headers locally and lists
+any report-only violations. Before switching to an enforced `Content-Security-Policy`, check the console
+on the live site with all tracker IDs set and the real Flodesk form loaded.
+
+`ten-pillar-quiz.vercel.app` 308-redirects (same path) to `https://audit.thatmusicteacher.com`, so the
+default Vercel domain doesn't serve a second copy. Preview-deployment URLs are not redirected.
 
 ## Domain
 

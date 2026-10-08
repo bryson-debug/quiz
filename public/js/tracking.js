@@ -24,6 +24,13 @@ function initMeta(id) {
     t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
   }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
   /* eslint-enable */
+  // Turn off the pixel's automatic configuration BEFORE init. With it on, the pixel auto-detects
+  // buttons and form submissions and collects page/form metadata, which could include the
+  // embedded Flodesk form where people type their name and email. This site must never send
+  // names or emails to Meta (see CLAUDE.md, Privacy model), so only the explicit events below
+  // are sent. Also keep "Automatic Advanced Matching" OFF in Meta Events Manager: that is a
+  // separate, dashboard-only setting this call does not control.
+  window.fbq('set', 'autoConfig', false, id);
   window.fbq('init', id);
   window.fbq('track', 'PageView');
 }
