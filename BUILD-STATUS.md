@@ -1,6 +1,6 @@
 # Elementary Music Success Scorecard: Build Status
 
-_Last updated: October 6, 2026 (after QA round 1)_
+_Last updated: October 8, 2026 (after the privacy/QA audit fixes)_
 
 ## At a glance
 
@@ -50,21 +50,39 @@ _Last updated: October 6, 2026 (after QA round 1)_
 
 - **After submission:** results appear when Flodesk shows its success state. If it doesn't, they appear about 1.5 seconds after a valid submit.
 - **If the form is blocked** (for example by an ad blocker), a "Show my results" button appears after 6 seconds, so nobody gets stuck.
-- **Status:** only tested against a simulated form so far. The real-form test is pending (see "Next steps").
+- **If the form loads after that fallback appears,** the fallback hides again and its button stops working.
+- **A missing form ID** shows the fallback with a console error. It never uses another pillar's form.
+- **Flodesk loads only at the email gate,** not on page load, so Flodesk only sees people who reach it.
+- **Status:** live QA on October 6 confirmed each pillar's form is used and results appear after submitting.
 
 ### Design
 - **Colors:** mint `#CDEAE7`, near-black `#1C2120` and white.
-- **Fonts:** headings use Arial Black, or the self-hosted Archivo Black on devices without it. Body text is Inter.
+- **Fonts:** headings use Arial Black, or the self-hosted Archivo Black on devices without it. Body text is Inter, also self-hosted. Google Fonts has been removed.
 - **Screen sizes:** mobile-first. Checked at 360, 390, 768, 1024, 1280 and 1440px plus landscape, with no horizontal scrolling. Rating buttons span the full width of each question.
 - **Accessibility:** keyboard-navigable rating buttons, focus moved to each new screen, screen-reader announcements, and reduced-motion support.
 - **Phones:** Next and Back stick to the bottom of the screen and never sit under the cookie bar.
 
 ### Privacy
-- **No backend or database.** Scoring runs in the visitor's browser.
+- **No backend or database.** Scoring runs in the visitor's browser, and nothing is stored on a server.
+- **Stored in the visitor's browser (`localStorage`):**
+  - quiz state under `ten-scorecard-v1` (individual answers, current screen, gate unlock), kept about 6 months so progress survives closed tabs
+  - the cookie-bar dismissal under `ten-cookie-notice-dismissed`
+
+  No name or email is stored.
 - **Name and email are collected only by Flodesk.**
-- **The PDF name field is never stored or sent.**
-- **Trackers never receive names, emails or individual answers.**
-- **Clarity masking** is set on the email gate and the PDF name field.
+- **The PDF name field** is prefilled from the email form in memory only. It's never stored or sent.
+- **Trackers** never receive names, emails, individual answers or scores. Meta and GA4 receive the **growth pillar name** on the Lead and EDGE-click events, plus quiz-progress events (pillar name and step).
+- **Meta pixel automatic configuration is off** in code. *Automatic Advanced Matching* must also be turned off in Meta Events Manager.
+- **Clarity masking** covers the whole quiz: every screen, the ratings, scores and results, plus the email gate and the PDF name field.
+- **Who sees visitors:**
+  - Meta, Google Analytics and Microsoft Clarity: every page view, once their IDs are set
+  - Flodesk: only from the email gate onward
+  - Google Fonts: no longer used
+
+### Security
+- **Headers on every page:** `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy` and `Permissions-Policy`.
+- **Content-Security-Policy in report-only mode.** It doesn't block anything yet; violations only show in the browser console. See CLAUDE.md for the full policy.
+- **`ten-pillar-quiz.vercel.app` redirects** to `audit.thatmusicteacher.com`, so there's no second public copy.
 
 ### Other
 - **PDF scorecard:** generated in the browser on one letter-size page, with the TEN logo, scores, radar chart, foundation and growth pillars, growth plan, trainings and a footer.
@@ -78,6 +96,18 @@ _Last updated: October 6, 2026 (after QA round 1)_
 - Added the "Before you begin" page.
 - Rating buttons now span the full width of the question text.
 - Connected the 4 remaining Flodesk forms.
+
+### Privacy/QA audit fixes (October 8, PR, one commit each)
+1. The EDGE link uses `/edge` (`/EDGE` returned a 404), including the PDF footer.
+2. The gate fallback hides once the form renders.
+3. Clarity masks the whole quiz.
+4. Meta pixel `autoConfig` is turned off.
+5. Added `X-Frame-Options` and a report-only CSP. The Flodesk snippet moved out of the page into its own file.
+6. Inter is self-hosted, and Google Fonts is gone.
+7. A missing form ID fails loudly, with no wrong-pillar fallback.
+8. Flodesk loads only at the gate.
+9. The duplicate `ten-pillar-quiz.vercel.app` domain redirects to the real one.
+10. These docs were updated.
 
 ### QA round 1 fixes (October 6)
 - All-equal scores no longer list "also worth your attention" pillars, and a note explains tie-break picks.
@@ -111,6 +141,8 @@ _Last updated: October 6, 2026 (after QA round 1)_
 - [ ] **Meta Pixel ID** added
 - [ ] **GA4 Measurement ID** added
 - [ ] **Microsoft Clarity ID** added, with masking set to **Strict** in the Clarity dashboard
+- [ ] **Meta Events Manager:** Automatic Advanced Matching turned **off** for the pixel
+- [ ] **Switch the CSP from report-only to enforced** after checking the live console with tracker IDs set and the real Flodesk form loaded
 - [ ] **Real logo, OG image and favicon** added
 - [ ] **Real copy** for each pillar's foundation and growth text replaced in `public/js/config.js`
 - [ ] **15 real recommended trainings** (3 per pillar: title, clinician, one-line description)
